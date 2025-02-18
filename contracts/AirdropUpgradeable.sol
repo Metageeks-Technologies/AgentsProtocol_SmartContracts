@@ -57,8 +57,9 @@ contract AirdropUpgradeable is
     /**
      * @dev State variables for tracking airdrops
      */
-    AirdropData[] public airdrops;
+    mapping(uint256 => AirdropData) public airdrops;
     uint256 public totalInvestors;
+    uint256 public lastAirdropId;
 
     /**
      * @dev Event emitted when a new airdrop is created
@@ -66,7 +67,7 @@ contract AirdropUpgradeable is
     event AirdropCreated(
         address indexed creator,
         address tokenAddress,
-        uint256 indexed airdropIndex,
+        uint256 indexed airdropId,
         uint256 startTime,
         address[] investors,
         uint256[] amounts
@@ -148,12 +149,12 @@ contract AirdropUpgradeable is
         token.safeTransferFrom(msg.sender, address(this), totalTokensRequired);
 
         // Then update state
-        airdrops.push();
-        AirdropData storage newAirdrop = airdrops[airdrops.length - 1];
+        uint256 newAirdropId = lastAirdropId + 1;
+        AirdropData storage newAirdrop = airdrops[newAirdropId];
         newAirdrop.token = token;
         newAirdrop.totalAllocated = totalTokensRequired;
         newAirdrop.startTime = _startTime;
-        newAirdrop.airdropId = airdrops.length;
+        newAirdrop.airdropId = newAirdropId;
         newAirdrop.isDeleted = false;
 
         for (uint256 i = 0; i < _addresses.length; i++) {
@@ -165,11 +166,12 @@ contract AirdropUpgradeable is
         }
 
         totalInvestors += _addresses.length;
+        lastAirdropId = newAirdropId;
 
         emit AirdropCreated(
             msg.sender,
             _tokenAddress,
-            airdrops.length - 1,
+            newAirdropId,
             _startTime,
             _addresses,
             _amounts
@@ -182,7 +184,7 @@ contract AirdropUpgradeable is
      * @param _amount Amount of tokens to claim
      */
     function claim(uint256 _airdropId, uint256 _amount) public nonReentrant {
-        require(_airdropId < airdrops.length, "Invalid airdrop ID");
+        require(_airdropId > 0 && _airdropId <= lastAirdropId, "Invalid airdrop ID");
 
         AirdropData storage airdrop = airdrops[_airdropId];
         require(!airdrop.isDeleted, "Airdrop has been deleted");
@@ -240,7 +242,7 @@ contract AirdropUpgradeable is
      * @return bool Whether the airdrop has been deleted
      */
     function isAirdropDeleted(uint256 _airdropId) public view returns (bool) {
-        require(_airdropId < airdrops.length, "Invalid airdrop ID");
+        require(_airdropId > 0 && _airdropId <= lastAirdropId, "Invalid airdrop ID");
         return airdrops[_airdropId].isDeleted;
     }
 

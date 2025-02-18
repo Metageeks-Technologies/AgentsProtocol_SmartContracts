@@ -20,7 +20,7 @@ This repository contains the smart contracts for the **Agents Protocol**, includ
 ### **Other Contracts**
 - **PriorityPass**: [`0x98653063CdadB07E4C89a4200F5Ac514c8780Db1`](https://aware-fake-trim-testnet.explorer.testnet.skalenodes.com/address/0x98653063CdadB07E4C89a4200F5Ac514c8780Db1)
 - **MultiSendUpgradeable**: [`0xaDc97023b8F2f7E3b0f4e2582e0B5fE6940AfC36`](https://aware-fake-trim-testnet.explorer.testnet.skalenodes.com/address/0xaDc97023b8F2f7E3b0f4e2582e0B5fE6940AfC36)
-- **AirdropUpgradeable**: [`0x68A2919dCa9CcD62C385583252490dA12eE0171c`](https://aware-fake-trim-testnet.explorer.testnet.skalenodes.com/address/0x68A2919dCa9CcD62C385583252490dA12eE0171c)
+- **AirdropUpgradeable**: [`0x5D6Fa8E895085076A99511E4829A4b268D91f5a9`](https://aware-fake-trim-testnet.explorer.testnet.skalenodes.com/address/0x5D6Fa8E895085076A99511E4829A4b268D91f5a9)
 
 ## 🚀 **Getting Started**
 
