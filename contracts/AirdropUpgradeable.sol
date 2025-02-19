@@ -31,7 +31,7 @@ contract AirdropUpgradeable is
         uint256 startTime;
         uint256 airdropId;
         bool isDeleted;
-        address creator;  // Track who created the airdrop
+        address creator; // Track who created the airdrop
         address[] investors;
         uint256[] currentAllocations;
         uint256[] claimed;
@@ -42,7 +42,7 @@ contract AirdropUpgradeable is
     mapping(uint256 => AirdropData) public airdrops;
     uint256 public totalInvestors;
     uint256 public lastAirdropId;
-    
+
     // Safety limits
     uint256 public constant MIN_RECIPIENTS = 1;
     uint256 public constant MAX_RECIPIENTS = 1000;
@@ -104,8 +104,8 @@ contract AirdropUpgradeable is
         );
         require(_startTime >= block.timestamp, "Start Time can't be in past");
         require(
-            _addresses.length >= MIN_RECIPIENTS && 
-            _addresses.length <= MAX_RECIPIENTS, 
+            _addresses.length >= MIN_RECIPIENTS &&
+                _addresses.length <= MAX_RECIPIENTS,
             "Invalid number of recipients"
         );
 
@@ -117,13 +117,13 @@ contract AirdropUpgradeable is
         }
 
         IERC20 token = IERC20(_tokenAddress);
-        
+
         // Check if user has approved enough tokens
         require(
             token.allowance(msg.sender, address(this)) >= totalTokensRequired,
             "Insufficient allowance"
         );
-        
+
         // Check if user has enough tokens
         require(
             token.balanceOf(msg.sender) >= totalTokensRequired,
@@ -167,30 +167,39 @@ contract AirdropUpgradeable is
     /**
      * @dev Allows users to claim their allocated tokens
      * @param _airdropId ID of the airdrop to claim from
-     * @param _amount Amount of tokens to claim
      */
-    function claim(uint256 _airdropId, uint256 _amount) public nonReentrant {
-        require(_airdropId > 0 && _airdropId <= lastAirdropId, "Invalid airdrop ID");
+    function claim(uint256 _airdropId) public nonReentrant {
+        require(
+            _airdropId > 0 && _airdropId <= lastAirdropId,
+            "Invalid airdrop ID"
+        );
 
         AirdropData storage airdrop = airdrops[_airdropId];
         require(!airdrop.isDeleted, "Airdrop has been deleted");
         require(block.timestamp >= airdrop.startTime, "Airdrop not started");
 
         uint256 investorIndex = airdrop.investorIndex[msg.sender];
+
+        // Check if user is in the airdrop
         require(
-            airdrop.currentAllocations[investorIndex] > 0,
-            "Nothing to claim"
+            investorIndex < airdrop.investors.length,
+            "Not eligible for this airdrop"
         );
 
-        require(_amount > 0, "Amount must be greater than 0");
+        // Check if user has already claimed
         require(
-            _amount <= airdrop.currentAllocations[investorIndex],
-            "Amount exceeds allocation"
+            airdrop.claimed[investorIndex] < airdrop.allocations[msg.sender],
+            "Already claimed full allocation"
         );
 
-        airdrop.claimed[investorIndex] += _amount;
-        airdrop.currentAllocations[investorIndex] -= _amount;
+        uint256 claimableAmount = airdrop.currentAllocations[investorIndex];
+        require(claimableAmount > 0, "Nothing left to claim");
 
+        // Update state
+        airdrop.claimed[investorIndex] += claimableAmount;
+        airdrop.currentAllocations[investorIndex] = 0;
+
+        // Check if all tokens have been claimed to mark airdrop as deleted
         bool canDelete = true;
         for (uint256 i = 0; i < airdrop.currentAllocations.length; i++) {
             if (airdrop.currentAllocations[i] > 0) {
@@ -198,7 +207,7 @@ contract AirdropUpgradeable is
                 break;
             }
         }
-        
+
         if (canDelete) {
             airdrop.isDeleted = true;
             emit AirdropDeleted(
@@ -208,12 +217,13 @@ contract AirdropUpgradeable is
             );
         }
 
-        airdrop.token.safeTransfer(msg.sender, _amount);
+        // Transfer tokens
+        airdrop.token.safeTransfer(msg.sender, claimableAmount);
 
         emit TokenClaimed(
             msg.sender,
             _airdropId,
-            _amount,
+            claimableAmount,
             airdrop.claimed[investorIndex],
             airdrop.currentAllocations[investorIndex]
         );
@@ -228,18 +238,23 @@ contract AirdropUpgradeable is
      * @return startTime When the airdrop begins
      * @return isDeleted Whether the airdrop is deleted
      */
-    function getAirdropInfo(uint256 _airdropId) 
-        public 
-        view 
+    function getAirdropInfo(
+        uint256 _airdropId
+    )
+        public
+        view
         returns (
             address creator,
             address tokenAddress,
             uint256 totalAllocated,
             uint256 startTime,
             bool isDeleted
-        ) 
+        )
     {
-        require(_airdropId > 0 && _airdropId <= lastAirdropId, "Invalid airdrop ID");
+        require(
+            _airdropId > 0 && _airdropId <= lastAirdropId,
+            "Invalid airdrop ID"
+        );
         AirdropData storage airdrop = airdrops[_airdropId];
         return (
             airdrop.creator,
@@ -251,7 +266,10 @@ contract AirdropUpgradeable is
     }
 
     function isAirdropDeleted(uint256 _airdropId) public view returns (bool) {
-        require(_airdropId > 0 && _airdropId <= lastAirdropId, "Invalid airdrop ID");
+        require(
+            _airdropId > 0 && _airdropId <= lastAirdropId,
+            "Invalid airdrop ID"
+        );
         return airdrops[_airdropId].isDeleted;
     }
 
